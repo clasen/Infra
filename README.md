@@ -15,7 +15,17 @@ One-command install of [LazyVim](https://www.lazyvim.org/) and Neovim. Backs up 
 | **macOS** (Apple Silicon & Intel) | [Mac/install_lazyvim.sh](Mac/install_lazyvim.sh) |
 | **Ubuntu** | [Ubuntu/install_lazyvim.sh](Ubuntu/install_lazyvim.sh) |
 
-Run with:
+You can install LazyVim with:
+
+```bash
+# macOS
+curl https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Mac/install_lazyvim.sh | bash
+
+# Ubuntu
+curl https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Ubuntu/install_lazyvim.sh | bash
+```
+
+Or run the script locally after cloning:
 
 ```bash
 # macOS
