@@ -6,7 +6,41 @@ A collection of scripts and tools for infrastructure, servers, and development t
 
 ## Collection
 
-### 1. LazyVim (Neovim) installer
+### 1. Audit remote script (`audit_remote_script`)
+
+**What it does:** Downloads the script from the given URL, prints its SHA256, and sends it to **Codex** for a security audit. Codex returns a verdict (OK, REVIEW, or BLOCK), a summary, findings by severity, and suspicious lines. With `--run-if-ok`, if the verdict is OK it prompts you to run the script; otherwise nothing is executed. This avoids blindly piping `curl … | bash`.
+
+**Good practice:** Always audit scripts before you run them—especially those downloaded from the internet—before giving them access to your machine. This helper automates that review with Codex so it’s quick and consistent.
+
+**Requirements:** `curl`, [Codex CLI](https://codex.dev/) in `PATH`.
+
+**Usage:**
+
+```bash
+# Source the function (e.g. from the repo root)
+source audit_remote_script.sh
+
+# Audit only (no execution) — e.g. LazyVim macOS installer
+audit_remote_script https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Mac/install_lazyvim.sh
+
+# Audit and, if Codex says OK, offer to run the script
+audit_remote_script --run-if-ok https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Mac/install_lazyvim.sh
+
+# Keep temp files (script + prompt + report) for inspection — e.g. LazyVim Ubuntu
+audit_remote_script --keep https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Ubuntu/install_lazyvim.sh
+```
+
+| Option        | Description |
+|---------------|-------------|
+| `--run-if-ok` | If verdict is OK, prompt to execute the script. |
+| `--keep`      | Do not delete temp dir; print its path. |
+| `-h`, `--help`| Show usage. |
+
+**Exit codes:** `0` = OK (and optionally ran), `1` = usage/download/audit error, `2` = REVIEW, `3` = BLOCK, `4` = unknown verdict.
+
+---
+
+### 2. LazyVim (Neovim) installer
 
 One-command install of [LazyVim](https://www.lazyvim.org/) and Neovim. Backs up existing config if present and installs Neovim under `~/.local` when possible.
 
