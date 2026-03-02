@@ -69,21 +69,10 @@ EOF
   }
   trap cleanup EXIT
 
-  echo "Downloading script..."
   if ! curl -fsSL "$url" -o "$script_file"; then
     echo "Error: failed to download script" >&2
     return 1
   fi
-
-  echo
-  echo "Downloaded to: $script_file"
-  echo "SHA256:"
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$script_file"
-  else
-    shasum -a 256 "$script_file"
-  fi
-  echo
 
   cat > "$prompt_file" <<'EOF'
 You are auditing a shell installation script for security risk.
@@ -93,33 +82,21 @@ VERDICT: OK
 VERDICT: REVIEW
 VERDICT: BLOCK
 
-Use:
-- OK only if the script appears reasonably safe to run as-is
-- REVIEW if it is not clearly malicious but needs human review or has meaningful risk
-- BLOCK if it appears malicious, deceptive, or unreasonably dangerous
+Be permissive: prefer OK when the script does normal installation tasks (downloads, extracting, copying files, PATH or profile edits). Use:
+- OK for typical installers, prompt-based scripts, and scripts that only do common operations (curl/wget, mkdir, cp, symlinks, PATH updates). Default to OK unless there is clear malice or high risk.
+- REVIEW only if there is real uncertainty (e.g. obfuscation, unusual network calls) or non-trivial risk worth human check.
+- BLOCK only if the script is clearly malicious, deliberately deceptive, or unreasonably dangerous (e.g. ransomware, credential theft, backdoors).
 
-Then provide these sections:
+Then provide briefly:
 
 SUMMARY:
-A short executive summary.
+One short line.
 
 FINDINGS:
-Bullet list grouped by severity: high, medium, low.
-
-SUSPICIOUS_LINES:
-Quote exact lines or clearly identify the dangerous fragments.
+Only if any; otherwise "None."
 
 NOTES:
-Mention:
-- sudo or privilege escalation
-- destructive commands
-- PATH/profile modifications
-- systemd/cron/launch persistence
-- remote downloads and chained execution
-- eval/base64/obfuscation
-- telemetry or data exfiltration
-- root assumptions
-- writes outside user directory
+Only mention if relevant: sudo, destructive commands, persistence, obfuscation, exfiltration.
 
 SCRIPT:
 EOF
@@ -129,10 +106,8 @@ EOF
     cat "$script_file"
   } >> "$prompt_file"
 
-  echo "Running Codex audit..."
-  echo
-
-  if ! codex exec --ephemeral "$(cat "$prompt_file")" | tee "$report_file"; then
+  echo "Running security audit on script..."
+  if ! codex exec --ephemeral "$(cat "$prompt_file")" > "$report_file" 2>&1; then
     echo
     echo "Error: Codex audit failed" >&2
     return 1
@@ -154,7 +129,8 @@ EOF
   case "$verdict" in
     OK)
       if [[ "$auto_run" == "true" ]]; then
-        read -r -p "Codex marked it OK. Execute script now? [y/N] " confirm
+        printf "Codex marked it OK. Execute script now? [y/N] "
+        read -r confirm
         if [[ "$confirm" =~ ^[Yy]$ ]]; then
           echo "Executing script..."
           bash "$script_file"
