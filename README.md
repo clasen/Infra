@@ -8,7 +8,7 @@ A collection of scripts and tools for infrastructure, servers, and development t
 
 ### 1. Audit remote script (`audit_remote_script`)
 
-**What it does:** Downloads the script from the given URL and sends it to **Codex** for a security audit. Codex returns a verdict (OK, REVIEW, or BLOCK); only the verdict is shown (the full report is saved in a temp file—use `--keep` to inspect it). With `--run-if-ok`, if the verdict is OK it prompts you to run the script; otherwise nothing is executed. This avoids blindly piping `curl … | bash`.
+**What it does:** Downloads the script from the given URL and sends it to **Codex** for a security audit. Codex returns a verdict (OK, REVIEW, or BLOCK); only the verdict is shown (the full report is saved in a temp file; use `--keep` to inspect it). With `--run-if-ok`, if the verdict is OK it prompts you to run the script; otherwise nothing is executed. This avoids blindly piping `curl … | bash`.
 
 **Good practice:** Always audit scripts before you run them—especially those downloaded from the internet—before giving them access to your machine. This helper automates that review with Codex so it’s quick and consistent.
 
@@ -25,9 +25,6 @@ audit_remote_script https://raw.githubusercontent.com/clasen/Infra/refs/heads/ma
 
 # Audit and, if Codex says OK, offer to run the script
 audit_remote_script --run-if-ok https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Mac/install_lazyvim.sh
-
-# Keep temp files (script + prompt + report) for inspection — e.g. LazyVim Ubuntu
-audit_remote_script --keep https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Ubuntu/install_lazyvim.sh
 ```
 
 | Option        | Description |
