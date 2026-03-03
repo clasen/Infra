@@ -8,7 +8,7 @@ A collection of scripts and tools for infrastructure, servers, and development t
 
 ### 1. Audit remote script (`audit_remote_script`)
 
-**What it does:** Downloads the script from the given URL, prints its SHA256, and sends it to **Codex** for a security audit. Codex returns a verdict (OK, REVIEW, or BLOCK), a summary, findings by severity, and suspicious lines. With `--run-if-ok`, if the verdict is OK it prompts you to run the script; otherwise nothing is executed. This avoids blindly piping `curl … | bash`.
+**What it does:** Downloads the script from the given URL and sends it to **Codex** for a security audit. Codex returns a verdict (OK, REVIEW, or BLOCK); only the verdict is shown (the full report is saved in a temp file—use `--keep` to inspect it). With `--run-if-ok`, if the verdict is OK it prompts you to run the script; otherwise nothing is executed. This avoids blindly piping `curl … | bash`.
 
 **Good practice:** Always audit scripts before you run them—especially those downloaded from the internet—before giving them access to your machine. This helper automates that review with Codex so it’s quick and consistent.
 
