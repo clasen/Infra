@@ -46,7 +46,7 @@ echo "Installing for user: $TARGET_USER"
 echo "Target home: $TARGET_HOME"
 
 apt-get update
-apt-get install -y git ripgrep curl unzip xclip
+apt-get install -y git ripgrep curl unzip xclip build-essential fontconfig
 
 # Remove old apt neovim if present
 apt-get remove -y neovim || true
@@ -63,6 +63,19 @@ ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
 # Optional Nerd Font download (set NVIM_NERD_FONT to choose another)
 rm -f "/tmp/${NERD_FONT_SLUG}.zip"
 curl -sL -o "/tmp/${NERD_FONT_SLUG}.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/${NERD_FONT_SLUG}.zip"
+
+# Install Nerd Font for target user
+FONT_ZIP="/tmp/${NERD_FONT_SLUG}.zip"
+FONT_DIR="$TARGET_HOME/.local/share/fonts"
+FONT_TMP="/tmp/nerd_font_${NERD_FONT_SLUG}"
+mkdir -p "$FONT_DIR"
+rm -rf "$FONT_TMP"
+unzip -o -q "$FONT_ZIP" -d "$FONT_TMP"
+find "$FONT_TMP" -maxdepth 1 -type f \( -name '*.ttf' -o -name '*.otf' \) -exec mv -f {} "$FONT_DIR" \;
+rm -rf "$FONT_TMP"
+if command -v fc-cache >/dev/null 2>&1; then
+  fc-cache -f "$FONT_DIR" >/dev/null 2>&1 || true
+fi
 
 # Ensure base dirs exist
 mkdir -p "$TARGET_HOME/.config" "$TARGET_HOME/.local/share" "$TARGET_HOME/.local/state" "$TARGET_HOME/.cache"
@@ -100,6 +113,19 @@ return {
 CATPPUCCIN_LUA
 sed -i "s/CATPPUCCIN_FLAVOUR_PLACEHOLDER/$CATPPUCCIN_FLAVOUR/g" "$PLUGINS_DIR/catppuccin.lua"
 
+# Configure Neovim GUI font (used by GUIs like Neovide)
+OPTIONS_LUA="$CONFIG_DIR/lua/config/options.lua"
+GUIFONT_NAME="${NERD_FONT_SLUG} Nerd Font"
+if [[ -f "$OPTIONS_LUA" ]]; then
+  if ! grep -q "guifont" "$OPTIONS_LUA" 2>/dev/null; then
+    {
+      echo ""
+      echo "-- Nerd Font (installed by this script; set NVIM_NERD_FONT to change)"
+      echo "vim.opt.guifont = \"${GUIFONT_NAME}:h14\""
+    } >> "$OPTIONS_LUA"
+  fi
+fi
+
 fix_ownership_if_needed
 
 echo
@@ -108,3 +134,5 @@ nvim --version | head -n 1
 echo
 echo "LazyVim config installed at: $CONFIG_DIR"
 echo "Theme: Catppuccin ($CATPPUCCIN_FLAVOUR). Set NVIM_CATPPUCCIN_FLAVOUR to change (latte, frappe, macchiato, mocha)."
+echo "Font: ${GUIFONT_NAME} installed in $FONT_DIR."
+echo "For terminal Neovim, set your terminal font to '${GUIFONT_NAME}'."

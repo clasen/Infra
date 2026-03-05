@@ -40,6 +40,14 @@ backup_if_exists() {
   fi
 }
 
+fix_ownership_if_needed() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    local target_group
+    target_group="$(id -gn "$TARGET_USER" 2>/dev/null || echo staff)"
+    chown -R "$TARGET_USER:$target_group" "$TARGET_HOME/.config" "$TARGET_HOME/.local" "$TARGET_HOME/Library/Fonts" 2>/dev/null || true
+  fi
+}
+
 echo "Installing for user: $TARGET_USER"
 echo "Target home: $TARGET_HOME"
 
@@ -179,6 +187,8 @@ if [[ -f "$OPTIONS_LUA" ]]; then
     echo "Configured guifont in $OPTIONS_LUA"
   fi
 fi
+
+fix_ownership_if_needed
 
 echo
 echo "Installed Neovim:"
