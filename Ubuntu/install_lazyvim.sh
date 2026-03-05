@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Install LazyVim + Neovim on Ubuntu.
+# Optional env vars:
+#   NVIM_NERD_FONT - Nerd Font zip to download (default: FiraCode).
+#   NVIM_CATPPUCCIN_FLAVOUR - Catppuccin flavour (default: macchiato). Options: latte, frappe, macchiato, mocha.
+
 # Resolve target user/home
 if [[ "${SUDO_USER:-}" != "" && "${SUDO_USER}" != "root" ]]; then
   TARGET_USER="$SUDO_USER"
@@ -14,6 +19,13 @@ CONFIG_DIR="$TARGET_HOME/.config/nvim"
 DATA_DIR="$TARGET_HOME/.local/share/nvim"
 STATE_DIR="$TARGET_HOME/.local/state/nvim"
 CACHE_DIR="$TARGET_HOME/.cache/nvim"
+
+# Nerd Font zip to download (e.g. FiraCode, JetBrainsMono). Default: FiraCode.
+NERD_FONT_SLUG="${NVIM_NERD_FONT:-FiraCode}"
+NERD_FONT_VERSION="v3.4.0"
+
+# Catppuccin theme flavour (latte, frappe, macchiato, mocha). Default: macchiato.
+CATPPUCCIN_FLAVOUR="${NVIM_CATPPUCCIN_FLAVOUR:-macchiato}"
 
 backup_if_exists() {
   local path="$1"
@@ -48,9 +60,9 @@ rm -rf /opt/nvim-linux-x86_64
 tar -C /opt -xzf nvim-linux-x86_64.tar.gz
 ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
 
-# Optional Nerd Font download
-rm -f /tmp/FiraCode.zip
-curl -LO https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/FiraCode.zip
+# Optional Nerd Font download (set NVIM_NERD_FONT to choose another)
+rm -f "/tmp/${NERD_FONT_SLUG}.zip"
+curl -sL -o "/tmp/${NERD_FONT_SLUG}.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/${NERD_FONT_SLUG}.zip"
 
 # Ensure base dirs exist
 mkdir -p "$TARGET_HOME/.config" "$TARGET_HOME/.local/share" "$TARGET_HOME/.local/state" "$TARGET_HOME/.cache"
@@ -65,6 +77,29 @@ backup_if_exists "$CACHE_DIR"
 git clone https://github.com/LazyVim/starter "$CONFIG_DIR"
 rm -rf "$CONFIG_DIR/.git"
 
+# Catppuccin theme (https://github.com/catppuccin/nvim)
+PLUGINS_DIR="$CONFIG_DIR/lua/plugins"
+mkdir -p "$PLUGINS_DIR"
+cat > "$PLUGINS_DIR/catppuccin.lua" << 'CATPPUCCIN_LUA'
+return {
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    priority = 1000,
+    opts = {
+      flavour = "CATPPUCCIN_FLAVOUR_PLACEHOLDER",
+    },
+  },
+  {
+    "LazyVim/LazyVim",
+    opts = {
+      colorscheme = "catppuccin-CATPPUCCIN_FLAVOUR_PLACEHOLDER",
+    },
+  },
+}
+CATPPUCCIN_LUA
+sed -i "s/CATPPUCCIN_FLAVOUR_PLACEHOLDER/$CATPPUCCIN_FLAVOUR/g" "$PLUGINS_DIR/catppuccin.lua"
+
 fix_ownership_if_needed
 
 echo
@@ -72,3 +107,4 @@ echo "Installed Neovim:"
 nvim --version | head -n 1
 echo
 echo "LazyVim config installed at: $CONFIG_DIR"
+echo "Theme: Catppuccin ($CATPPUCCIN_FLAVOUR). Set NVIM_CATPPUCCIN_FLAVOUR to change (latte, frappe, macchiato, mocha)."

@@ -2,6 +2,11 @@
 set -euo pipefail
 
 # Install LazyVim + Neovim on macOS (Apple Silicon or Intel)
+#
+# Optional env vars:
+#   NVIM_NERD_FONT  - Nerd Font to install (default: FiraCode). Examples: JetBrainsMono, Hack.
+#   NVIM_CATPPUCCIN_FLAVOUR - Catppuccin flavour (default: macchiato). Options: latte, frappe, macchiato, mocha.
+# See: https://github.com/ryanoasis/nerd-fonts/releases and https://github.com/catppuccin/nvim
 
 # Resolve target user/home
 if [[ "${SUDO_USER:-}" != "" && "${SUDO_USER}" != "root" ]]; then
@@ -18,6 +23,13 @@ STATE_DIR="$TARGET_HOME/.local/state/nvim"
 CACHE_DIR="$TARGET_HOME/.cache/nvim"
 LOCAL_BIN="$TARGET_HOME/.local/bin"
 NVIM_INSTALL_DIR="$TARGET_HOME/.local/nvim"
+
+# Nerd Font: name of the zip on GitHub (e.g. FiraCode, JetBrainsMono). Default: FiraCode.
+NERD_FONT_SLUG="${NVIM_NERD_FONT:-FiraCode}"
+NERD_FONT_VERSION="v3.4.0"
+
+# Catppuccin theme flavour (latte, frappe, macchiato, mocha). Default: macchiato.
+CATPPUCCIN_FLAVOUR="${NVIM_CATPPUCCIN_FLAVOUR:-macchiato}"
 
 backup_if_exists() {
   local path="$1"
@@ -99,14 +111,15 @@ if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]; then
   echo
 fi
 
-# --- Nerd Font (Fira Code): install and configure ---
-rm -f /tmp/FiraCode.zip
-curl -sL -o /tmp/FiraCode.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/FiraCode.zip
+# --- Nerd Font: install and configure (font name from NVIM_NERD_FONT) ---
+FONT_ZIP="/tmp/${NERD_FONT_SLUG}.zip"
+rm -f "$FONT_ZIP"
+curl -sL -o "$FONT_ZIP" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/${NERD_FONT_SLUG}.zip"
 FONT_DIR="$TARGET_HOME/Library/Fonts"
 mkdir -p "$FONT_DIR"
-FONT_TMP="/tmp/firacode_fonts"
+FONT_TMP="/tmp/nerd_font_${NERD_FONT_SLUG}"
 rm -rf "$FONT_TMP"
-unzip -o -q /tmp/FiraCode.zip -d "$FONT_TMP"
+unzip -o -q "$FONT_ZIP" -d "$FONT_TMP"
 # Move only font files (macOS unzip may not support glob in -d mode)
 find "$FONT_TMP" -maxdepth 1 -type f \( -name '*.ttf' -o -name '*.otf' \) -exec mv -f {} "$FONT_DIR" \;
 rm -rf "$FONT_TMP"
@@ -127,14 +140,41 @@ backup_if_exists "$CACHE_DIR"
 git clone https://github.com/LazyVim/starter "$CONFIG_DIR"
 rm -rf "$CONFIG_DIR/.git"
 
+# --- Catppuccin theme (https://github.com/catppuccin/nvim) ---
+PLUGINS_DIR="$CONFIG_DIR/lua/plugins"
+mkdir -p "$PLUGINS_DIR"
+cat > "$PLUGINS_DIR/catppuccin.lua" << 'CATPPUCCIN_LUA'
+return {
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    priority = 1000,
+    opts = {
+      flavour = "CATPPUCCIN_FLAVOUR_PLACEHOLDER",
+    },
+  },
+  {
+    "LazyVim/LazyVim",
+    opts = {
+      colorscheme = "catppuccin-CATPPUCCIN_FLAVOUR_PLACEHOLDER",
+    },
+  },
+}
+CATPPUCCIN_LUA
+# Replace placeholder with actual flavour
+sed -i '' "s/CATPPUCCIN_FLAVOUR_PLACEHOLDER/$CATPPUCCIN_FLAVOUR/g" "$PLUGINS_DIR/catppuccin.lua"
+echo "Configured Catppuccin theme: $CATPPUCCIN_FLAVOUR"
+
 # Configure Neovim to use the installed Nerd Font (GUI clients: Neovide, etc.)
+# guifont name: most Nerd Fonts use "<Slug> Nerd Font" (e.g. "FiraCode Nerd Font")
 OPTIONS_LUA="$CONFIG_DIR/lua/config/options.lua"
+GUIFONT_NAME="${NERD_FONT_SLUG} Nerd Font"
 if [[ -f "$OPTIONS_LUA" ]]; then
   if ! grep -q "guifont" "$OPTIONS_LUA" 2>/dev/null; then
     {
       echo ""
-      echo "-- Fira Code Nerd Font (installed by this script)"
-      echo "vim.opt.guifont = \"FiraCode Nerd Font:h14\""
+      echo "-- Nerd Font (installed by this script; set NVIM_NERD_FONT to change)"
+      echo "vim.opt.guifont = \"${GUIFONT_NAME}:h14\""
     } >> "$OPTIONS_LUA"
     echo "Configured guifont in $OPTIONS_LUA"
   fi
@@ -145,6 +185,8 @@ echo "Installed Neovim:"
 "$LOCAL_BIN/nvim" --version | head -n 1
 echo
 echo "LazyVim config: $CONFIG_DIR"
-echo "Font: Fira Code Nerd Font installed in $FONT_DIR and set in Neovim (guifont)."
-echo "      For terminal Neovim, set your terminal font to 'FiraCode Nerd Font'."
+echo "Theme: Catppuccin ($CATPPUCCIN_FLAVOUR). Set NVIM_CATPPUCCIN_FLAVOUR to change (latte, frappe, macchiato, mocha)."
+echo "Font: ${GUIFONT_NAME} installed in $FONT_DIR and set in Neovim (guifont)."
+echo "      To use another font, set NVIM_NERD_FONT (e.g. JetBrainsMono) and re-run."
+echo "      For terminal Neovim, set your terminal font to '${GUIFONT_NAME}'."
 echo "Run: nvim   (ensure \$HOME/.local/bin is in your PATH)"

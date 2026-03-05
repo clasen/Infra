@@ -46,24 +46,20 @@ One-command install of [LazyVim](https://www.lazyvim.org/) and Neovim. Backs up 
 | **macOS** (Apple Silicon & Intel) | [Mac/install_lazyvim.sh](Mac/install_lazyvim.sh) |
 | **Ubuntu** | [Ubuntu/install_lazyvim.sh](Ubuntu/install_lazyvim.sh) |
 
+**Theme:** [Catppuccin](https://github.com/catppuccin/nvim) is installed with flavour **Macchiato** by default. Set `NVIM_CATPPUCCIN_FLAVOUR` to use another: `latte`, `frappe`, `macchiato`, `mocha`.
+
+**Font:** By default the script installs **Fira Code** Nerd Font. To use another font, set `NVIM_NERD_FONT` before running (e.g. `NVIM_NERD_FONT=JetBrainsMono bash Mac/install_lazyvim.sh`). Examples: `FiraCode`, `JetBrainsMono`, `Hack`, `CascadiaCode`, `Iosevka` ([full list](https://github.com/ryanoasis/nerd-fonts/releases)).
+
 You can install LazyVim with:
 
+#### macOS
 ```bash
-# macOS
 curl https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Mac/install_lazyvim.sh | bash
-
-# Ubuntu
-curl https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Ubuntu/install_lazyvim.sh | bash
 ```
 
-Or run the script locally after cloning:
-
+#### Ubuntu
 ```bash
-# macOS
-bash Mac/install_lazyvim.sh
-
-# Ubuntu
-bash Ubuntu/install_lazyvim.sh
+curl https://raw.githubusercontent.com/clasen/Infra/refs/heads/main/Ubuntu/install_lazyvim.sh | bash
 ```
 
 ---
